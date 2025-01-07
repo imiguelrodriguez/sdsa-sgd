@@ -1,53 +1,83 @@
 from math import exp
 import random
 
-# TODO: Calculate logistic
+from data import load_adult_data
+
+
 def logistic(x):
-    return 1.
+    """Calculate the logistic function."""
+    return 1 / (1 + exp(-x))
 
-# TODO: Calculate dot product of two lists
 def dot(x, y):
-    s = 0
-    return s
+    """Calculate the dot product of two lists."""
+    return sum(xi * yi for xi, yi in zip(x, y))
 
-# TODO: Calculate prediction based on model
 def predict(model, point):
-    return 0
+    """Calculate prediction based on model."""
+    return logistic(dot(model, point['features']))
 
-# TODO: Calculate accuracy of predictions on data
+
 def accuracy(data, predictions):
-    correct = 0
-    return float(correct)/len(data)
+    """Calculate accuracy of predictions on data."""
+    correct = sum((pred > 0.5) == point['label'] for point, pred in zip(data, predictions))
+    return float(correct) / len(data)
 
-# TODO: Update model using learning rate and L2 regularization
 def update(model, point, delta, rate, lam):
-    pass
+    """Update model using learning rate and L2 regularization."""
+    for i in range(len(model)):
+        grad = -delta * point['features'][i] + lam * model[i]
+        model[i] -= rate * grad
 
 def initialize_model(k):
+    """Initialize the model with Gaussian-distributed values."""
     return [random.gauss(0, 1) for x in range(k)]
 
-# TODO: Train model using training data
+
 def train(data, epochs, rate, lam):
+    """Train model using training data."""
     model = initialize_model(len(data[0]['features']))
+    for epoch in range(epochs):
+        for point in data:
+            prediction = predict(model, point)
+            delta = point['label'] - prediction
+            update(model, point, delta, rate, lam)
     return model
-        
+
 def extract_features(raw):
+    """Extract features from raw data."""
     data = []
     for r in raw:
         point = {}
         point["label"] = (r['income'] == '>50K')
 
         features = []
-        features.append(1.)
-        features.append(float(r['age'])/100)
-        features.append(float(r['education_num'])/20)
-        features.append(r['marital'] == 'Married-civ-spouse')
-        #TODO: Add more feature extraction rules here!
+        features.append(1.)  # Bias term
+        features.append(float(r['age']) / 100)  # Normalized age
+        features.append(float(r['education_num']) / 20)  # Normalized education number
+        features.append(r['marital'] == 'Married-civ-spouse')  # Binary marital status
+        features.append(float(r['hr_per_week']) / 100)  # Normalized hours per week
+        features.append(r['occupation'] == 'Exec-managerial')  # Binary occupation
+        features.append(float(r['capital_gain']) / 10000)  # Normalized capital gain
+        features.append(float(r['capital_loss']) / 10000)  # Normalized capital loss
+        features.append(r['sex'] == 'Male')  # Binary gender
+        features.append(r['race'] == 'White')  # Binary race feature
+        features.append(r['type_employer'] == 'Private')  # Binary employer type
+
         point['features'] = features
         data.append(point)
     return data
 
-# TODO: Tune your parameters for final submission
 def submission(data):
-    return train(data, 1, .01, 0)
-    
+    """Tune parameters and train the model for final submission."""
+    return train(data, epochs=10, rate=0.05, lam=0.01)
+
+# Example usage with hypothetical raw data
+raw_data = load_adult_data()
+
+data = extract_features(raw_data)
+model = submission(data)
+
+# Example predictions
+predictions = [predict(model, point) for point in data]
+print("Model predictions:", predictions)
+print("Accuracy:", accuracy(data, predictions))

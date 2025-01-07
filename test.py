@@ -31,12 +31,12 @@ class SGDTest(unittest.TestCase):
         valid_data = extract_features(load_adult_valid_data())
         model = submission(train_data)
         predictions = [predict(model, p) for p in train_data]
-        print
-        print
-        print "Training Accuracy:", accuracy(train_data, predictions)
+        print()
+        print()
+        print("Training Accuracy:", accuracy(train_data, predictions))
         predictions = [predict(model, p) for p in valid_data]
-        print "Validation Accuracy:", accuracy(valid_data, predictions)
-        print
+        print("Validation Accuracy:", accuracy(valid_data, predictions))
+        print()
 
 
 if __name__ == '__main__':

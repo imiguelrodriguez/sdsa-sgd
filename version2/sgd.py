@@ -1,5 +1,5 @@
-from math import exp
 import random
+from math import exp
 from data import load_adult_data
 from lithops import FunctionExecutor
 import numpy as np
@@ -43,30 +43,29 @@ def extract_features(raw):
         data.append(point)
     return data
 
-def update_model(model, point, learning_rate):
-    """Update model using stochastic gradient descent."""
+def update_model(model, point, learning_rate, lam):
+    """Update model using stochastic gradient descent with L2 regularization."""
     prediction = predict(model, point)
     error = point['label'] - prediction
     for i in range(len(model)):
-        model[i] += learning_rate * error * point['features'][i]
+        model[i] += learning_rate * error * point['features'][i] - lam * model[i]  # L2 regularization term
     return model
 
-def train_model(data, learning_rate, epochs):
-    """Train logistic regression model."""
+def train_model(data, learning_rate, epochs, lam):
+    """Train logistic regression model with SGD and L2 regularization."""
     model = [random.random() for _ in range(len(data[0]['features']))]
     for epoch in range(epochs):
         for point in data:
-            model = update_model(model, point, learning_rate)
+            model = update_model(model, point, learning_rate, lam)
     return model
 
-def parallel_train_model(data, learning_rate, epochs):
+def parallel_train_model(data, learning_rate, epochs, num_workers, lam):
     """Train logistic regression model in parallel using Lithops."""
     def train_partition(data_partition):
-        return train_model(data_partition, learning_rate, epochs)
+        return train_model(data_partition, learning_rate, epochs, lam)
 
-    # Partition the data into smaller chunks
-    num_partitions = max(1, len(data) // 100)  # Adjust the divisor to control partition size
-    partitions = np.array_split(data, num_partitions)
+    # Partition the data into the specified number of workers
+    partitions = np.array_split(data, num_workers)
 
     fexec = FunctionExecutor()
     fexec.map(train_partition, partitions)
@@ -76,6 +75,7 @@ def parallel_train_model(data, learning_rate, epochs):
     final_model = [sum(weights) / len(weights) for weights in zip(*models)]
     return final_model
 
-def submission(train_data):
+def submission(train_data, num_workers, lam):
     """Train model and return it."""
-    return parallel_train_model(train_data, learning_rate=0.01, epochs=10)
+    return parallel_train_model(train_data, learning_rate=0.01, epochs=10, num_workers=num_workers, lam=lam)
+

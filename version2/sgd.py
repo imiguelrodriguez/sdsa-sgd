@@ -55,27 +55,32 @@ def train_model(data, learning_rate, epochs, lam):
     """Train logistic regression model with SGD and L2 regularization."""
     model = [random.random() for _ in range(len(data[0]['features']))]
     for epoch in range(epochs):
+        random.shuffle(data)  # Shuffle data before each epoch
         for point in data:
             model = update_model(model, point, learning_rate, lam)
+        # Calculate and print accuracy after each epoch
+        predictions = [predict(model, p) for p in data]
+        epoch_accuracy = accuracy(data, predictions)
+        print(f"Epoch {epoch + 1}/{epochs} - Training Accuracy: {epoch_accuracy}")
     return model
+
+def train_partition(data_partition, learning_rate, epochs, lam):
+    return train_model(data_partition, learning_rate, epochs, lam)
 
 def parallel_train_model(data, learning_rate, epochs, num_workers, lam):
     """Train logistic regression model in parallel using Lithops."""
-    def train_partition(data_partition):
-        return train_model(data_partition, learning_rate, epochs, lam)
-
-    # Partition the data into the specified number of workers
+    np.random.shuffle(data)
     partitions = np.array_split(data, num_workers)
-
+    
     fexec = FunctionExecutor()
-    fexec.map(train_partition, partitions)
-    models = fexec.get_result()
+    futures = []
+    for partition in partitions:
+        futures.append(fexec.call_async(train_partition, (partition, learning_rate, epochs, lam)))
+    models = fexec.get_result(futures)
 
     # Average the models
     final_model = [sum(weights) / len(weights) for weights in zip(*models)]
     return final_model
 
-def submission(train_data, num_workers, lam):
-    """Train model and return it."""
-    return parallel_train_model(train_data, learning_rate=0.01, epochs=10, num_workers=num_workers, lam=lam)
-
+def submission(train_data, num_workers, lam, epochs):
+    return parallel_train_model(train_data, learning_rate=0.01, epochs=epochs, num_workers=num_workers, lam=lam)

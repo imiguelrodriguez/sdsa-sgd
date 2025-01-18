@@ -85,24 +85,51 @@ class SGDTest(unittest.TestCase):
         test_data = extract_features(test_raw_data)
         
         # Configuration parameters
-        worker_counts = [1, 2, 4, 8]  # Number of workers to test
-        epoch_values = [5, 10, 20, 50]
-        learning_rate = 0.001
-        reg_lambda = 0.01
+        worker_counts = [8, 12]  # Number of workers to test
+        epoch_values = [15, 20, 25, 30]
+        learning_rates = [0.1, 0.01]
+        reg_lambdas = [ 0.0001, 0.00001, 0.000001]
 
+        
+        # Evaluate configurations and keep results
+        # we create a list of tuples with the configuration and the results
+        results = []
 
         for epochs in epoch_values:
             for num_workers in worker_counts:
+                for learning_rate in learning_rates:
+                    for reg_lambda in reg_lambdas:
 
-                model, time_taken, train_accuracy, valid_accuracy, test_accuracy = evaluate_configuration(
-                    train_data,
-                    valid_data,
-                    test_data,
-                    num_workers,
-                    epochs,
-                    learning_rate,
-                    reg_lambda
-                )  
+                        model, time_taken, train_accuracy, valid_accuracy, test_accuracy = evaluate_configuration(
+                            train_data,
+                            valid_data,
+                            test_data,
+                            num_workers,
+                            epochs,
+                            learning_rate,
+                            reg_lambda
+                        )
+
+                        results.append((num_workers, epochs, time_taken, train_accuracy, valid_accuracy, test_accuracy))
+
+        # get best configuration checking best validation accuracy
+        best_config = max(results, key=lambda x: x[4])
+        num_workers, epochs, time_taken, train_accuracy, valid_accuracy, test_accuracy = best_config
+
+            
+        # print best configuration
+        print(f"\nBest configuration:")
+        print(f"Workers: {num_workers}")
+        print(f"Epochs: {epochs}")
+        print(f"Learning rate: {learning_rate}")
+        print(f"Regularization lambda: {reg_lambda}")
+        print(f"Training time: {time_taken:.2f} seconds")
+        print(f"Training accuracy: {train_accuracy:.4f}")
+        print(f"Validation accuracy: {valid_accuracy:.4f}")
+        print(f"Test accuracy: {test_accuracy:.4f}")
+
+
+
 
 
 if __name__ == '__main__':

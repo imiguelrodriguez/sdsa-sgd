@@ -42,6 +42,9 @@ class DistributedSGD:
             # Average the models
             model = [sum(weights) / len(weights) for weights in zip(*models)]
 
+            print(f"Epoch {epoch + 1} completed")
+            print(f"Model: {model}")
+
         return model
 
 def update_model(model, point, learning_rate, lam):
